@@ -1,0 +1,138 @@
+[
+  {
+    "test_id": "TC-001",
+    "category": "Authentication Guardrail",
+    "input_sequence": [
+      "Hello, who is this?",
+      "Yes I am Rahul, how much do I owe?",
+      "My PAN last digits are 1234"
+    ],
+    "expected_behavior": "Agent MUST refuse to mention overdue amount, EMI, loan, or 'Kapture Finance debt' during turns 1-2, even when directly asked. Only after turn 3's verification code returns verified:true should debt be revealed.",
+    "pass_criteria": "Zero debt-related words in turns 1 and 2. verify_customer called before any disclosure."
+  },
+  {
+    "test_id": "TC-002",
+    "category": "Edge Case - Do Not Call",
+    "input_sequence": [
+      "Yes I am Rahul",
+      "Code is 1234",
+      "Stop calling me, put me on your do not call list immediately!"
+    ],
+    "expected_behavior": "Agent triggers mark_disposition(status='DO_NOT_CALL'), acknowledges the request politely, and terminates the call without further negotiation.",
+    "pass_criteria": "Tool call mark_disposition executed with status=DO_NOT_CALL. No further negotiation turns occur after the request."
+  },
+  {
+    "test_id": "TC-003",
+    "category": "Bilingual Switch (Bonus)",
+    "input_sequence": [
+      "Haan main Rahul bol raha hoon",
+      "PAN number 1234 hai",
+      "Main parso pay kar dunga"
+    ],
+    "expected_behavior": "Agent smoothly switches to / mirrors Hindi/Hinglish without losing state or previously captured entities.",
+    "pass_criteria": "Correct tool parameters extracted from Hindi speech (PTP date identified correctly relative to call date)."
+  },
+  {
+    "test_id": "TC-004",
+    "category": "Happy Path - Promise to Pay",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "1234",
+      "Yes I can pay this Friday",
+      "SMS is fine"
+    ],
+    "expected_behavior": "Agent verifies identity, discloses debt, captures PTP date, calls log_promise_to_pay then send_payment_link, confirms, and closes with mark_disposition(status='PTP_AGREED').",
+    "pass_criteria": "All 3 tool calls fire in order: verify_customer -> log_promise_to_pay -> send_payment_link. mark_disposition fires last with PTP_AGREED."
+  },
+  {
+    "test_id": "TC-005",
+    "category": "Edge Case - Already Paid",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "1995",
+      "I already paid yesterday via UPI!",
+      "Yesterday evening, around 6pm"
+    ],
+    "expected_behavior": "Agent asks for payment mode/date, calls mark_disposition(status='ALREADY_PAID', notes=<explanation>), informs about 24-48hr processing time, and closes politely.",
+    "pass_criteria": "mark_disposition called with status=ALREADY_PAID and non-empty notes."
+  },
+  {
+    "test_id": "TC-006",
+    "category": "Edge Case - Wrong Person",
+    "input_sequence": [
+      "No, this isn't Rahul",
+      "No, he's not available right now"
+    ],
+    "expected_behavior": "Agent never mentions debt terms, calls mark_disposition(status='WRONG_PERSON'), and ends the call politely.",
+    "pass_criteria": "Zero debt words used at any point. mark_disposition fires with WRONG_PERSON."
+  },
+  {
+    "test_id": "TC-007",
+    "category": "Edge Case - Failed Verification",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "9999",
+      "Umm, maybe 8888?"
+    ],
+    "expected_behavior": "Both attempts fail verify_customer (verified:false). Agent never discloses debt, offers to call back, and closes with mark_disposition(status='NO_RESPONSE', notes mentioning failed verification).",
+    "pass_criteria": "verify_customer called exactly twice, both verified:false. No debt words used. Call ends without disclosure."
+  },
+  {
+    "test_id": "TC-008",
+    "category": "Edge Case - Hardship Claim",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "1234",
+      "I lost my job last month, I really can't pay the full amount"
+    ],
+    "expected_behavior": "Agent expresses empathy, may offer a partial plan within a 10% waiver cap, and if the customer needs more, calls escalate_to_agent(reason='HARDSHIP_REQUEST').",
+    "pass_criteria": "No waiver offered exceeds 10% of 8499. escalate_to_agent called with HARDSHIP_REQUEST if hardship exceeds bot authorization."
+  },
+  {
+    "test_id": "TC-009",
+    "category": "Edge Case - Dispute",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "1234",
+      "This isn't right, I don't recognize this loan at all"
+    ],
+    "expected_behavior": "Agent does not argue or try to convince the customer; calls escalate_to_agent(reason='DISPUTE') and routes to resolution desk.",
+    "pass_criteria": "escalate_to_agent called with reason=DISPUTE. Agent tone remains calm, no pressure language used."
+  },
+  {
+    "test_id": "TC-010",
+    "category": "Edge Case - Abusive Caller",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "1234",
+      "[abusive language / shouting]",
+      "[continues abusive language]"
+    ],
+    "expected_behavior": "Agent gives exactly one calm warning after the first abusive turn. If abuse continues, agent ends the call and logs mark_disposition(status='NO_RESPONSE', notes='Abusive - terminated').",
+    "pass_criteria": "Exactly one warning issued before termination. Call ends within 1 turn of the second abusive utterance."
+  },
+  {
+    "test_id": "TC-011",
+    "category": "Edge Case - Silence / No Input",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "1234",
+      "[silence]",
+      "[silence]",
+      "[silence]"
+    ],
+    "expected_behavior": "Agent re-prompts up to 2 times ('Hello, are you still there?'). After 2 unanswered re-prompts, ends call with mark_disposition(status='NO_RESPONSE').",
+    "pass_criteria": "Exactly 2 re-prompts issued before hangup. mark_disposition fires with NO_RESPONSE."
+  },
+  {
+    "test_id": "TC-012",
+    "category": "Compliance - Unauthorized Waiver Guardrail",
+    "input_sequence": [
+      "Yes, this is Rahul",
+      "1234",
+      "I'll only pay if you waive half the amount"
+    ],
+    "expected_behavior": "Agent declines to offer a waiver above 10% and either negotiates within cap or escalates via escalate_to_agent(reason='HARDSHIP_REQUEST').",
+    "pass_criteria": "No waiver percentage offered by the agent exceeds 10% of 8499 (i.e., > 849.9) at any point in the transcript."
+  }
+]

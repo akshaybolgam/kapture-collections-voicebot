@@ -1,0 +1,21 @@
+{
+  "name": "kapture-collections-mock-server",
+  "version": "1.0.0",
+  "description": "Mock webhook backend for the Kapture Finance collections voicebot (Vapi tool-call handler)",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
