@@ -1,141 +1,126 @@
 [
   {
-    "type": "function",
-    "function": {
-      "name": "verify_customer",
-      "description": "Verifies customer identity against record using last 4 digits of PAN or birth year before revealing any debt details. Must be called before any debt-related information is disclosed.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "account_id": {
-            "type": "string",
-            "description": "The customer's unique account ID, e.g. ACC-88392"
-          },
-          "verification_code": {
-            "type": "string",
-            "description": "The 4-digit PAN code or 4-digit birth year provided by the user."
-          }
+    "type": "apiRequest",
+    "name": "verify_customer",
+    "description": "Verifies customer identity using last 4 digits of PAN or birth year before revealing any debt details. Must be called before any debt disclosure.",
+    "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook/verify-customer",
+    "method": "POST",
+    "body": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "description": "The customer's unique account ID, e.g. ACC-88392"
         },
-        "required": ["account_id", "verification_code"]
-      }
-    },
-    "server": {
-      "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook"
+        "verification_code": {
+          "type": "string",
+          "description": "The 4-digit PAN code or 4-digit birth year provided by the user."
+        }
+      },
+      "required": ["account_id", "verification_code"]
     }
   },
   {
-    "type": "function",
-    "function": {
-      "name": "log_promise_to_pay",
-      "description": "Logs the agreed promise-to-pay date and amount committed by the customer. Only call this after the customer has explicitly agreed to a payment date.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "account_id": {
-            "type": "string",
-            "description": "The customer's unique account ID, e.g. ACC-88392"
-          },
-          "ptp_date": {
-            "type": "string",
-            "description": "The ISO-8601 date agreed upon for payment, e.g., 2026-08-14"
-          },
-          "amount": {
-            "type": "number",
-            "description": "The amount the customer agreed to pay, in INR."
-          }
+    "type": "apiRequest",
+    "name": "log_promise_to_pay",
+    "description": "Logs the agreed promise-to-pay date and amount after the customer commits to a payment.",
+    "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook/log-promise-to-pay",
+    "method": "POST",
+    "body": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "description": "The customer's unique account ID, e.g. ACC-88392"
         },
-        "required": ["account_id", "ptp_date", "amount"]
-      }
-    },
-    "server": {
-      "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook"
+        "ptp_date": {
+          "type": "string",
+          "description": "The ISO-8601 date agreed upon for payment, e.g., 2026-08-14"
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount the customer agreed to pay, in INR."
+        }
+      },
+      "required": ["account_id", "ptp_date", "amount"]
     }
   },
   {
-    "type": "function",
-    "function": {
-      "name": "send_payment_link",
-      "description": "Triggers an instant payment link via SMS or WhatsApp to the customer's registered mobile number. Call this immediately after log_promise_to_pay succeeds.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "account_id": {
-            "type": "string",
-            "description": "The customer's unique account ID, e.g. ACC-88392"
-          },
-          "channel": {
-            "type": "string",
-            "enum": ["SMS", "WhatsApp", "BOTH"],
-            "description": "Delivery channel for the payment link."
-          }
+    "type": "apiRequest",
+    "name": "send_payment_link",
+    "description": "Sends a payment link via SMS or WhatsApp after a promise-to-pay is logged.",
+    "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook/send-payment-link",
+    "method": "POST",
+    "body": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "description": "The customer's unique account ID, e.g. ACC-88392"
         },
-        "required": ["account_id", "channel"]
-      }
-    },
-    "server": {
-      "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook"
+        "channel": {
+          "type": "string",
+          "description": "Delivery channel for the payment link.",
+          "enum": ["SMS", "WhatsApp", "BOTH"]
+        }
+      },
+      "required": ["account_id", "channel"]
     }
   },
   {
-    "type": "function",
-    "function": {
-      "name": "escalate_to_agent",
-      "description": "Routes the call/case to a human agent for hardship negotiation or dispute resolution that is outside the bot's authorization.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "account_id": {
-            "type": "string",
-            "description": "The customer's unique account ID, e.g. ACC-88392"
-          },
-          "reason": {
-            "type": "string",
-            "enum": ["HARDSHIP_REQUEST", "DISPUTE"],
-            "description": "Reason for escalation."
-          }
+    "type": "apiRequest",
+    "name": "escalate_to_agent",
+    "description": "Routes the call to a human agent for hardship negotiation or dispute resolution that is outside the bot's authorization.",
+    "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook/escalate-to-agent",
+    "method": "POST",
+    "body": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "description": "The customer's unique account ID, e.g. ACC-88392"
         },
-        "required": ["account_id", "reason"]
-      }
-    },
-    "server": {
-      "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook"
+        "reason": {
+          "type": "string",
+          "description": "Reason for escalation.",
+          "enum": ["HARDSHIP_REQUEST", "DISPUTE"]
+        }
+      },
+      "required": ["account_id", "reason"]
     }
   },
   {
-    "type": "function",
-    "function": {
-      "name": "mark_disposition",
-      "description": "Logs the final call outcome and disposition status in the database. Must be called exactly once before the call ends (except when superseded by a DO_NOT_CALL request, which also uses this tool).",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "account_id": {
-            "type": "string",
-            "description": "The customer's unique account ID, e.g. ACC-88392"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PTP_AGREED",
-              "ALREADY_PAID",
-              "DISPUTED",
-              "HARDSHIP_ESCALATED",
-              "WRONG_PERSON",
-              "DO_NOT_CALL",
-              "NO_RESPONSE"
-            ],
-            "description": "Final disposition status for the call."
-          },
-          "notes": {
-            "type": "string",
-            "description": "Free-text notes providing context for the disposition."
-          }
+    "type": "apiRequest",
+    "name": "mark_disposition",
+    "description": "Logs the final call outcome and disposition status in the database. Call this once before the call ends.",
+    "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook/mark-disposition",
+    "method": "POST",
+    "body": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "description": "The customer's unique account ID, e.g. ACC-88392"
         },
-        "required": ["account_id", "status"]
-      }
-    },
-    "server": {
-      "url": "https://untaken-slot-swampland.ngrok-free.dev/webhook"
+        "status": {
+          "type": "string",
+          "description": "Final disposition status for the call.",
+          "enum": [
+            "PTP_AGREED",
+            "ALREADY_PAID",
+            "DISPUTED",
+            "HARDSHIP_ESCALATED",
+            "WRONG_PERSON",
+            "DO_NOT_CALL",
+            "NO_RESPONSE"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-text notes providing context for the disposition."
+        }
+      },
+      "required": ["account_id", "status"]
     }
   }
 ]
